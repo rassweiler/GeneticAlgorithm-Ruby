@@ -1,15 +1,17 @@
+# Kyle Rassweiler 2016-01-7
+
 #Get the highest fitness and the gene sequence for it
-def GetHighestFitness(pop)
-    g = 0
-    highest = 0.0
-    for i in 0...pop.length
-        if pop[i].GetFitness > highest
-            highest = pop[i].GetFitness
-            g = i
+def GetHighestFitness(population)
+    iGeneIndex = 0 #Index of the gene with highest fitness
+    fHighestFitness = 0.0 #Fitness value
+    for iIndex in 0...population.length #Iterate population
+        if population[iIndex].GetFitness > fHighestFitness
+            fHighestFitness = population[iIndex].GetFitness
+            iGeneIndex = iIndex
         end
     end
-    fH = {"Gene" => pop[g].GetGenesString, "Fitness" => highest}
-    return fH
+    hFitness = {"Gene" => population[iGeneIndex].GetGenesString, "Fitness" => fHighestFitness}
+    return hFitness
 end
 
 #DNA class
@@ -19,9 +21,11 @@ class DNA
         @iLength = args["Length"] unless args["Length"].nil?
         @fFitness = 0.0
         @fMutation = 0.01
+        @fMutation = args["Chance"] unless args["Chance"].nil?
         @aGenes = Array.new(@iLength)
     end
     
+    #Fill gene array with random characters
     def RandomGenes
         @aGenes.map!{
             |x|
@@ -30,6 +34,7 @@ class DNA
         }
     end
     
+    #Fill gene array based on two parents
     def PopulateGenes(args)
         aP1 = args["P1"] unless args["P1"].nil?
         aP2 = args["P2"] unless args["P2"].nil?
@@ -43,6 +48,7 @@ class DNA
         end
     end
     
+    #Mutate individual characters in the gene array
     def Mutate
         for i in 0...@iLength
             a = Random.rand(0.0..1.0)
@@ -53,10 +59,12 @@ class DNA
         end
     end
     
+    #Get the fitness of this instance
     def GetFitness
         return @fFitness
     end
     
+    #Set the fitness of this instance based on a target string
     def SetFitness(target)
         score = 0
         for i in 0...@iLength
@@ -67,55 +75,58 @@ class DNA
         @fFitness = score.to_f/target.length
     end
     
+    #Get the gene array
     def GetGenes
         return @aGenes
     end
     
+    #Get the gene array in string form
     def GetGenesString
         return @aGenes.join
     end
 end
 
-#Main program===========================================================================
+#Main program
+#Setup parameters
 puts "Mutation Rate? (best is 0.01)"
-fRate = gets.chomp.to_f
-puts "Population Size? (best is 5000)"
-iPop = gets.chomp.to_i
+fMutationChance = gets.chomp.to_f
+puts "Population Size? (best is 6000)"
+iPopulationSize = gets.chomp.to_i
 sTarget = "Welcome to the Shopify team!"
-#sTarget = "Super Test Test Test"
-iL = sTarget.length
-gen = 0
+iTargetLength = sTarget.length
+iGeneration = 0
 aHistory = []
 
 #Setup scenario
-aPopulation = Array.new(iPop)
-aPool = []
-for i in 0...iPop
-    aPopulation[i] = DNA.new({"Length" => iL})
+aPopulation = Array.new(iPopulationSize)
+aGenePool = []
+for i in 0...iPopulationSize
+    aPopulation[i] = DNA.new({"Length" => iTargetLength, "Chance" => fMutationChance})
     aPopulation[i].RandomGenes
     aPopulation[i].SetFitness(sTarget)
 end
 fHighest = {}
 fHighest['Fitness'] = 0.0
+
 #Begin Circle Of Life
 while fHighest['Fitness'] < 1.0
 	#Increase generation count
-    gen += 1
+    iGeneration += 1
 
     #Get highest fitness
     fHighest = GetHighestFitness(aPopulation)
-    puts "Generation: #{gen}\nHighest Fitness: #{fHighest['Fitness']*100}\nGene: #{fHighest['Gene']} :"
+    puts "Generation: #{iGeneration}\nHighest Fitness: #{fHighest['Fitness']*100}\nGene: #{fHighest['Gene']} :"
     
     #Save to history
-    if gen % 10 == 0
-    	aHistory.push([gen,fHighest['Fitness']*100])
+    if iGeneration % 10 == 0
+    	aHistory.push([iGeneration,fHighest['Fitness']*100])
     end
 
     #Fill mating pool
-    for i in 0...iPop
+    for i in 0...iPopulationSize
         n = aPopulation[i].GetFitness*100
         for o in 0...n
-            aPool.push(aPopulation[i].dup)
+            aGenePool.push(aPopulation[i].dup)
         end
     end
 
@@ -123,19 +134,19 @@ while fHighest['Fitness'] < 1.0
     aPopulation.clear
 
     #Refill population
-    for i in 0...iPop
+    for i in 0...iPopulationSize
     	#Choose random parents
-        p1 = Random.rand(iPop)
-        p2 = Random.rand(iPop)
+        p1 = Random.rand(iPopulationSize)
+        p2 = Random.rand(iPopulationSize)
 
         #Ensure parents don't match
-        while aPool[p1].GetGenesString == aPool[p2].GetGenesString
-        	p2 = Random.rand(iPop)
+        while aGenePool[p1].GetGenesString == aGenePool[p2].GetGenesString
+        	p2 = Random.rand(iPopulationSize)
         end
 
         #Create child
-        c = DNA.new({"Length" => iL})
-        c.PopulateGenes({ "P1" => aPool[p1].GetGenes, "P2" => aPool[p2].GetGenes })
+        c = DNA.new({"Length" => iTargetLength, "Chance" => fMutationChance})
+        c.PopulateGenes({ "P1" => aGenePool[p1].GetGenes, "P2" => aGenePool[p2].GetGenes })
         c.Mutate
         c.SetFitness(sTarget)
 
@@ -144,8 +155,11 @@ while fHighest['Fitness'] < 1.0
     end
 
     #Clear gene pool
-    aPool.clear
+    aGenePool.clear
 end
+
+#Clear population pool
+aPopulation.clear
 
 #Write History to file
 File.open("History.txt", "w+") do |f|
