@@ -88,11 +88,13 @@ end
 
 #Main program
 #Setup parameters
-puts "Mutation Rate? (best is 0.01)"
-fMutationChance = gets.chomp.to_f
 puts "Population Size? (best is 6000)"
 iPopulationSize = gets.chomp.to_i
-sTarget = "Welcome to the Shopify team!"
+puts "Mutation Rate? (best is 0.01)"
+fMutationChance = gets.chomp.to_f
+puts "Target String?"
+#sTarget = "Welcome to the Shopify team!"
+sTarget = gets.chomp.to_s
 iTargetLength = sTarget.length
 iGeneration = 0
 aHistory = []
@@ -140,7 +142,7 @@ while fHighest['Fitness'] < 1.0
         p2 = Random.rand(iPopulationSize)
 
         #Ensure parents don't match
-        while aGenePool[p1].GetGenesString == aGenePool[p2].GetGenesString
+        while p1 == p2
         	p2 = Random.rand(iPopulationSize)
         end
 
