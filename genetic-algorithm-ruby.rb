@@ -87,83 +87,80 @@ class DNA
 end
 
 #Main program
-#Setup parameters
-puts "Population Size? (best is 6000)"
-iPopulationSize = gets.chomp.to_i
-puts "Mutation Rate? (best is 0.01)"
-fMutationChance = gets.chomp.to_f
-puts "Target String?"
-#sTarget = "Welcome to the Shopify team!"
-sTarget = gets.chomp.to_s
-iTargetLength = sTarget.length
-iGeneration = 0
-aHistory = []
+def RunProgram()
+	#Setup parameters
+	puts "Population Size? (best is 6000)"
+	@iPopulationSize = gets.chomp.to_i
+	puts "Mutation Rate? (best is 0.01)"
+	@fMutationChance = gets.chomp.to_f
+	puts "Target String?"
+	#sTarget = "Welcome to the Shopify team!"
+	@sTarget = gets.chomp.to_s
+	@iTargetLength = @sTarget.length
+	@iGeneration = 0
 
-#Setup scenario
-aPopulation = Array.new(iPopulationSize)
-aGenePool = []
-for i in 0...iPopulationSize
-    aPopulation[i] = DNA.new({"Length" => iTargetLength, "Chance" => fMutationChance})
-    aPopulation[i].RandomGenes
-    aPopulation[i].SetFitness(sTarget)
+	#Setup scenario
+	@aPopulation = Array.new(@iPopulationSize)
+	@aGenePool = []
+	for i in 0...@iPopulationSize
+	    @aPopulation[i] = DNA.new({"Length" => @iTargetLength, "Chance" => @fMutationChance})
+	    @aPopulation[i].RandomGenes
+	    @aPopulation[i].SetFitness(@sTarget)
+	end
+	@fHighest = {}
+	@fHighest['Fitness'] = 0.0
+
+	#Begin Circle Of Life
+	while @fHighest['Fitness'] < 1.0
+		#Increase generation count
+	    @iGeneration += 1
+
+	    #Get highest fitness
+	    @fHighest = GetHighestFitness(@aPopulation)
+	    puts "Generation: #{@iGeneration}\nHighest Fitness: #{@fHighest['Fitness']*100}\nGene: #{@fHighest['Gene']}"
+
+	    #Fill mating pool
+	    for i in 0...@iPopulationSize
+	        n = @aPopulation[i].GetFitness*100
+	        for o in 0..n
+	            @aGenePool.push(@aPopulation[i].clone)
+	        end
+	    end
+
+	    #Clear population -- Alternative: Clear those below mean only
+	    @aPopulation.clear
+
+	    #Refill population
+	    for i in 0...@iPopulationSize
+	    	#Choose random parents from gene pool
+	    	iPoolSize = @aGenePool.size
+	        p1 = Random.rand(iPoolSize)
+	        p2 = Random.rand(iPoolSize)
+
+	        #Ensure parents don't match
+	        while p1 == p2
+	        	p2 = Random.rand(iPoolSize)
+	        end
+
+	        #Create child
+	        c = DNA.new({"Length" => @iTargetLength, "Chance" => @fMutationChance})
+	        c.PopulateGenes({ "P1" => @aGenePool[p1].GetGenes, "P2" => @aGenePool[p2].GetGenes })
+	        c.Mutate
+	        c.SetFitness(@sTarget)
+
+	        #Add child to population
+	        @aPopulation.push(c.clone)
+	        c = nil
+	    end
+
+	    #Clear gene pool
+	    @aGenePool.clear
+	end
+
+	#Clear population pool
+	@aPopulation.clear
 end
-fHighest = {}
-fHighest['Fitness'] = 0.0
 
-#Begin Circle Of Life
-while fHighest['Fitness'] < 1.0
-	#Increase generation count
-    iGeneration += 1
-
-    #Get highest fitness
-    fHighest = GetHighestFitness(aPopulation)
-    puts "Generation: #{iGeneration}\nHighest Fitness: #{fHighest['Fitness']*100}\nGene: #{fHighest['Gene']} :"
-    
-    #Save to history
-    if iGeneration % 10 == 0
-    	aHistory.push([iGeneration,fHighest['Fitness']*100])
-    end
-
-    #Fill mating pool
-    for i in 0...iPopulationSize
-        n = aPopulation[i].GetFitness*100
-        for o in 0...n
-            aGenePool.push(aPopulation[i].dup)
-        end
-    end
-
-    #Clear population -- Alternative: Clear those below mean only
-    aPopulation.clear
-
-    #Refill population
-    for i in 0...iPopulationSize
-    	#Choose random parents
-        p1 = Random.rand(iPopulationSize)
-        p2 = Random.rand(iPopulationSize)
-
-        #Ensure parents don't match
-        while p1 == p2
-        	p2 = Random.rand(iPopulationSize)
-        end
-
-        #Create child
-        c = DNA.new({"Length" => iTargetLength, "Chance" => fMutationChance})
-        c.PopulateGenes({ "P1" => aGenePool[p1].GetGenes, "P2" => aGenePool[p2].GetGenes })
-        c.Mutate
-        c.SetFitness(sTarget)
-
-        #Add child to population
-        aPopulation.push(c.dup)
-    end
-
-    #Clear gene pool
-    aGenePool.clear
-end
-
-#Clear population pool
-aPopulation.clear
-
-#Write History to file
-File.open("History.txt", "w+") do |f|
-  f.puts(aHistory)
+if __FILE__ == $PROGRAM_NAME
+	RunProgram()
 end
