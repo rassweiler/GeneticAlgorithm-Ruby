@@ -88,6 +88,7 @@ end
 
 #Main program
 def RunProgram()
+    puts "Genetic Algorithm Ruby Edition\nKyle Rassweiler 2016\n----------------------------\n\n"
 	#Setup parameters
 	puts "Population Size? (best is 6000)"
 	@iPopulationSize = gets.chomp.to_i
@@ -163,4 +164,5 @@ end
 
 if __FILE__ == $PROGRAM_NAME
 	RunProgram()
+    gets
 end
